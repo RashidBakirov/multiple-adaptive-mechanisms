@@ -82,9 +82,9 @@ for k = 2:floor(rows/batchsize)
         elseif mode==9 %original dwm
             if k>2
                 if mean(resultsBatch)<threshold    
-                    r=4;
-                else
                     r=8;
+                else
+                    r=4;
                 end
             else
                 r=1;
@@ -179,9 +179,9 @@ for k = 2:floor(rows/batchsize)
             disp([num2str(k) ': AM deployed = ' num2str(r)]);
         elseif mode==9 %original dwm
                 if mean(resultsBatch)<threshold    
-                    r=3;
-                else
                     r=7;
+                else
+                    r=3;
                 end
             disp([num2str(k) ': AM deployed = ' num2str(r)]);
         elseif mode == 10 %xval
