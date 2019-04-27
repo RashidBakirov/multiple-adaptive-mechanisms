@@ -16,16 +16,11 @@ function max_ind = dwm_xval_select_batch(ensemble, dataBatch, labelsBatch, class
         dsk_train=dataset(dataBatchTrain,labelsBatchTrain);
         dsk_test=dataset(dataBatchTest,labelsBatchTest);
         
-        for j=0:7
-            ensemble_train{j+1}=dwm_adapt_batch(ensemble,dsk_train,classifier,j);
-            [~, ensemble_train{j+1}] = wm_mult_predict_batch(ensemble_train{j+1},dsk_test,labelsBatchTest);
-            sumAccuracy(j+1)=sumAccuracy(j+1)+ensemble_train{j+1}{1}.ensemble_accuracy;
+        for j=1:8
+            ensemble_train{j}=dwm_adapt_batch(ensemble,dsk_train,classifier,j);
+            [~, ensemble_train{j}] = wm_mult_predict_batch(ensemble_train{j},dsk_test,labelsBatchTest);
+            sumAccuracy(j)=sumAccuracy(j)+ensemble_train{j}{1}.ensemble_accuracy;
         end
     end
-    [maxval,max_ind] =max(sumAccuracy);
-    if max_ind==1 & sumAccuracy(1)==sumAccuracy(2) %if the choice of not retraining and retraining are equal, choose retraining
-          max_ind = 2;    
-    else
-    max_ind=max_ind-1;
-      
+    [maxval,max_ind] =max(sumAccuracy);     
 end

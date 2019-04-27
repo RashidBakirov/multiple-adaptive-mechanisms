@@ -1,4 +1,4 @@
-function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch(data, labels, classifier, mode, flag_rc,  batchsize, test_data, test_labels)
+function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch_weka(data, labels, classifier, options, mode, flag_rc,  batchsize, test_data, test_labels)
 tic
 % dynamic weighted majority with multiple ams
 % mode to select AM
@@ -7,29 +7,35 @@ tic
 % 10 - xval
 % 11 - optimal
 
-disp('START');
-disp(['MODE = ' num2str(mode)]);
-disp(['RC = ' num2str(flag_rc)]);
-
 NUMFOLDS = 10 %xval folds
 numlabels = length(unique(labels));
  
 [rows cols]=size(data);
 
-ds1=dataset(data(1:batchsize,:),labels(1:batchsize)) %create the first datapoint
-dsk=[];
-cl=ds1*classifier;
+%first convert everything to weka instances
+w_data_train = matlab2weka('w_data_train', [], [data labels]);
+w_data_train = wekaNumericToNominal( w_data_train, 'last');
+
+if ~isempty(test_data)
+    w_data_test = matlab2weka('w_data_test', [], [test_data test_labels]);
+    w_data_test = wekaNumericToNominal( w_data_test, 'last');
+end
+
+ds1=weka.core.Instances(w_data_train,0,batchsize); %create the first datapoint
+
+%cl = trainWekaClassifier(w_data,classifier,'-L 0 -G 20');
+cl = trainWekaClassifier(ds1,classifier,options);
+%cl = trainWekaClassifier(w_data,classifier,'-L 0');
+
 if flag_rc
     for i=1:8
         % initialize the first learner with weight 1, given classifier
         ensemble{i}{1}.model=cl;
         ensemble{i}{1}.weight=1;
-        ensemble{i}{1}.data=ds1;
     end
 else
     selected_ensemble{1}.model=cl;
     selected_ensemble{1}.weight=1;
-    selected_ensemble{1}.data=ds1;
 end
 result = zeros(1,rows-batchsize);
 %exp_count=zeros(1,rows);
@@ -38,7 +44,7 @@ acc=zeros(1,floor(rows/batchsize)-1);
 preds=zeros(1,rows-batchsize);
 ams=zeros(floor(rows/batchsize)-1,2);
 
-subwindow_size=size(test_data,1)/size(data,1);
+subwindow_size=size(test_data,1)/size(data,1)*batchsize;
 
 result_test = zeros(1,size(test_data,1)-subwindow_size*batchsize);
 pred_test = zeros(1,size(test_data,1)-subwindow_size*batchsize);
@@ -59,14 +65,16 @@ end
 
 %for all the data rows do incrementally the following:
 for k = 2:floor(rows/batchsize)
+    %k
+    if k==5
+       99
+    end
+
+    
     % 1) calculate prediction of ensemble
-    % disp('step 1');
-    
-    dataBatch=data(1+(k-1)*batchsize:k*batchsize,:);
+    % disp('step 1'); 
+    dsk=weka.core.Instances(w_data_train,(k-1)*batchsize,batchsize); %make a new dataset consisiting of current data point
     labelsBatch=labels(1+(k-1)*batchsize:k*batchsize);
-    dsk=dataset(dataBatch,labelsBatch); %make a new dataset consisiting of current data point
-    
-    
     %select an ensemble member to predict, if flag_return is set
     if flag_rc
     
@@ -94,7 +102,7 @@ for k = 2:floor(rows/batchsize)
         %parfor i=1:8
         % predicting with all possible ensembles
         for i=1:8   
-            [~, ensemble{i}] = wm_mult_predict_batch(ensemble{i},dsk,labelsBatch); 
+            [~, ensemble{i}] = wm_mult_predict_batch_weka(ensemble{i},dsk,labelsBatch); 
         end       
         preds(1+(k-2)*batchsize:(k-1)*batchsize)=ensemble{r}{1}.ensemble_prediction; %assigning predictions to the predictions of the selected batch r
 
@@ -103,10 +111,10 @@ for k = 2:floor(rows/batchsize)
         %testset is given
 
         if ~isempty(test_data)
-         test_dsk=dataset(test_data(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize,:));                      
-         test_preds=wm_mult_predict_batch_test(ensemble{r},test_dsk); %calculate prediction
-         pred_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds;
-         result_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds==test_labels(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize);
+             test_dsk=weka.core.Instances(w_data_test,(k-1)*subwindow_size,subwindow_size);   
+             test_preds=wm_mult_predict_batch_test_weka(ensemble{r},test_dsk); %calculate prediction
+             pred_test(1+(k-2)*subwindow_size:(k-1)*subwindow_size)=test_preds;
+             result_test(1+(k-2)*subwindow_size:(k-1)*subwindow_size)=test_preds==test_labels(1+(k-1)*subwindow_size:(k)*subwindow_size);
         end
         %---------------------------------------------------------------
 
@@ -118,22 +126,22 @@ for k = 2:floor(rows/batchsize)
         if mode==11 %optimal am
            preds(1+(k-2)*batchsize:(k-1)*batchsize)=selected_ensemble{1}.ensemble_prediction;
         end
-        ams(k-1,1)=r_actual; ams(k-1,2)=r-1;
+        ams(k-1,1)=r_actual; ams(k-1,2)=r;
  
         
     else %flag_rc is not set, only one ensemble
     
-        [~, selected_ensemble] = wm_mult_predict_batch(selected_ensemble,dsk,labelsBatch);
+        [~, selected_ensemble] = wm_mult_predict_batch_weka(selected_ensemble,dsk,labelsBatch);
         
          %---------------------------------------------------------------
         %BEGIN TESTING ON A SEPARATE TESTSET, without learning on itif a
         %testset is given
 
         if ~isempty(test_data)
-         test_dsk=dataset(test_data(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize,:));   
-         test_preds=wm_mult_predict_batch_test(selected_ensemble,test_dsk); %calculate prediction
-         pred_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds;
-         result_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds==test_labels(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize);
+         test_dsk=weka.core.Instances(w_data_test,(k-1)*subwindow_size,subwindow_size);  
+         test_preds=wm_mult_predict_batch_test_weka(selected_ensemble,test_dsk); %calculate prediction
+         pred_test(1+(k-2)*subwindow_size:(k-1)*subwindow_size)=test_preds;
+         result_test(1+(k-2)*subwindow_size:(k-1)*subwindow_size)=test_preds==test_labels(1+(k-1)*subwindow_size:(k)*subwindow_size);
         end
         
         
@@ -144,33 +152,33 @@ for k = 2:floor(rows/batchsize)
     %distr=tabulate(labels(1:k*batchsize)); %get the distribution of labels up to this point to estimate the threshold for DWM
     distr=tabulate(labels(1+(k-2)*batchsize:(k-1)*batchsize)); %get the distribution of labels from the last batch to estimate the threshold for DWM
     threshold=max(distr(:,end))/100; %the proportion of majority label
-    
     resultsBatch=preds(1+(k-2)*batchsize:(k-1)*batchsize)==labelsBatch';
     result(1+(k-2)*batchsize:(k-1)*batchsize)=resultsBatch;
 
+    %create accuracy data for plot
+    acc(k) = sum(result)/((k-1)*batchsize);
     
-    %adaptation-----------------------------------------------------
-    
+    %adaptation-----------------------------------------------------  
     %xval selection
     if mode == 10
         if flag_rc
-            [xval_selection] = dwm_xval_select_batch(ensemble{r}, dataBatch, labelsBatch, classifier, batchsize, NUMFOLDS);
+            [xval_selection] = dwm_xval_select_batch_weka(ensemble{r}, dsk, classifier, options, batchsize, NUMFOLDS);
         else
-            [xval_selection] = dwm_xval_select_batch(selected_ensemble, dataBatch, labelsBatch, classifier, batchsize, NUMFOLDS);
+            [xval_selection] = dwm_xval_select_batch_weka(selected_ensemble, dsk, classifier, options, batchsize, NUMFOLDS);
         end
     end
     % create all variations of dwm adaptation if flag return is set
     %parfor i=0:7
     if flag_rc
         for i=1:8
-            ensemble{i}=dwm_adapt_batch(selected_ensemble,dsk,classifier,i);
+            ensemble{i}=dwm_adapt_batch_weka(selected_ensemble,dsk,classifier,options,i);
         end
         
-    elseif mode~=11 %if not set selected_ensemble auomatically
+    elseif mode~=11 %if not set selected_ensemble automatically
         if mode<=8 %always same AM
             r=mode;
             disp([num2str(k) ': AM deployed = ' num2str(mode)]);
-      elseif mode==9 %original dwm
+        elseif mode==9 %original dwm
                 if mean(resultsBatch)<threshold    
                     r=5;
                 else
@@ -182,15 +190,8 @@ for k = 2:floor(rows/batchsize)
             disp([num2str(k) ': AM deployed = ' num2str(r)]);
         end
          ams(k-1,1)=r;ams(k-1,2)=r;
-        selected_ensemble=dwm_adapt_batch(selected_ensemble,dsk,classifier,r);       
+        selected_ensemble=dwm_adapt_batch_weka(selected_ensemble,dsk,classifier,options,r);       
     end
-    
-    
-    
-    
-    
-    %create accuracy data for plot
-     acc(k) = sum(result)/((k-1)*batchsize);
 
 %     
     %save the experts, weights and size of dataset
@@ -212,7 +213,7 @@ avg_acc=mean(result());
 
 if ~isempty(test_data)
     for i=1:floor(rows/batchsize)-1
-         avg_result_test(i)=mean(result_test((i-1)*subwindow_size*batchsize+1:i*subwindow_size*batchsize));
+         avg_result_test(i)=mean(result_test((i-1)*subwindow_size+1:i*subwindow_size));
     end
     
     avg_acc_test=mean(result_test);

@@ -7,7 +7,7 @@ new_ensemble=ensemble;
 [~, ens_size] =size(new_ensemble);
 
 for j=1:ens_size
-    new_ensemble{j}.weight=new_ensemble{j}.weight*exp(-new_ensemble{j}.correct); %weight update according to herbster 1998
+    new_ensemble{j}.weight=new_ensemble{j}.weight*exp(-(1-new_ensemble{j}.correct)); %weight update according to herbster 1998
 end
 
 %maxW= max(cellfun(@max,new_ensemble{:}.weight)); %max weight
