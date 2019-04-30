@@ -1,13 +1,11 @@
 function [ fin_preds ] = wm_class_prob_batch( labels, weights)
- 
+    %Probabilistic weighted voting for classification
     
-    %Make a cube of the labels that is number of labels by m by n
-    labels_cube = repmat(labels, [1, size(predmatrix, 2), size(predmatrix, 1)]);
+    weights=repmat(weights, size(labels,1), 1);
+    W_cdf = cumsum(weights,2);
+    x = rand(1,size(weights,1));
+    C = repmat(x,size(weights,2),1)'<W_cdf;
+    idx = [C(:,1) xor(C(:,2:end),C(:,1:end-1))];
+    fin_preds=sum(labels.*idx, 2);
     
-    %Compare the votes (streched to make surface) against a uniforma surface of each option
-    B = bsxfun(@eq, permute(predmatrix, [3 2 1]) ,labels_cube);
-    %Find a weighted sum
-    W = squeeze(sum(bsxfun(@times, repmat(weights, size(labels,1), 1), B), 2))';
-    %Find the options with the highest weighted sum
-    [xx, i] = max(W, [], 2);
-    fin_preds=labels(i); 
+end

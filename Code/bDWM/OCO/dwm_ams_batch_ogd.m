@@ -61,12 +61,18 @@ for k = 2:floor(rows/batchsize)
     % predicting with all possible ensembles
     for i=1:8
         [batch_preds{i}, ensemble{i}] = wm_mult_predict_batch(ensemble{i},dsk,labelsBatch);
+        loss(i)=1-ensemble{i}{1}.ensemble_accuracy;
     end
     
     
-    %assigning predictions to the weighted sum of predictions from all
+    %assigning predictions to the probabilistic weighted vote of predictions from all
     %am's.
-    preds(1+(k-2)*batchsize:(k-1)*batchsize) = sum(repmat(am_weights, batchsize, 1) * horzcat({batch_preds}),2);
+    preds(1+(k-2)*batchsize:(k-1)*batchsize) = wm_class_prob_batch( horzcat(batch_preds{:}), am_weights);
+    
+    %update weights according to online gradient descent.
+    am_weights=am_weights-learn_rate*loss;
+    %normalise weights
+    am_weights=am_weights/sum(am_weights);
         
     %---------------------------------------------------------------
     %BEGIN TESTING ON A SEPARATE TESTSET, without learning on itif a
