@@ -66,7 +66,7 @@ for k = 2:floor(rows/batchsize)
     
     %assigning predictions to the weighted sum of predictions from all
     %am's.
-    preds(1+(k-2)*batchsize:(k-1)*batchsize) = sum(repmat(am_weights, 1, batchsize) * horzcat({batch_preds}),2);
+    preds(1+(k-2)*batchsize:(k-1)*batchsize) = sum(repmat(am_weights, batchsize, 1) * horzcat({batch_preds}),2);
         
     %---------------------------------------------------------------
     %BEGIN TESTING ON A SEPARATE TESTSET, without learning on itif a
