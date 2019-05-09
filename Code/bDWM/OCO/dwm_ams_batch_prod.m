@@ -1,8 +1,7 @@
-function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch_ogd(data, labels, classifier, batchsize, test_data, test_labels, learn_rate)
+function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch_prod(data, labels, classifier, batchsize, test_data, test_labels, learn_rate)
 tic
 % dynamic weighted majority with multiple ams
-% mode to select AM
-% 1:8 - respective AM only
+% adapt_ml_prod implementation by Gaillard, however using the same constant learning rates across all AMs. 
 
 
 disp('START');
@@ -17,6 +16,7 @@ cl=ds1*classifier;
 w_init=1/8;
 
 am_weights=repmat(w_init, 1, 8);
+am_weights=am_weights./8;
 
 for i=1:8
     % initialize the first learner with weight 1, given classifier
@@ -57,6 +57,9 @@ for k = 2:floor(rows/batchsize)
     labelsBatch=labels(1+(k-1)*batchsize:k*batchsize);
     dsk=dataset(dataBatch,labelsBatch); %make a new dataset consisiting of current data point
     
+    %calculate the robabilities
+    am_probs=am_weights./sum(am_weights);
+    
     %parfor i=1:8
     % predicting with all possible ensembles
     for i=1:8
@@ -64,10 +67,15 @@ for k = 2:floor(rows/batchsize)
         loss(i)=1-ensemble{i}{1}.ensemble_accuracy;
     end
     
+    total_loss=sum(loss.*am_probs);
     
     %assigning predictions to the probabilistic weighted vote of predictions from all
     %am's.
     preds(1+(k-2)*batchsize:(k-1)*batchsize) = wm_class_prob_batch( batch_preds, am_weights);
+    
+    for i=1:8
+        am_weights(i)=am_weights(i)*(1+learn_rate*(total_loss-loss(i)));
+    end
     
     %update weights according to online gradient descent.
     am_weights=am_weights-learn_rate*loss;
