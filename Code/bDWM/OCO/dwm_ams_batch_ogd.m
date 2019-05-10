@@ -82,8 +82,8 @@ for k = 2:floor(rows/batchsize)
     if ~isempty(test_data)
         test_dsk=dataset(test_data(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize,:));
         for i=1:8
-        [batch_preds(:,i), ensemble{i}] = wm_mult_predict_batch(ensemble{i},dsk,labelsBatch);
-        loss(i)=1-ensemble{i}{1}.ensemble_accuracy;
+        [batch_preds(:,i), ~] = wm_mult_predict_batch(ensemble{i},dsk,labelsBatch);
+        batch_preds(:,i) = wm_class_prob_batch( batch_preds, am_weights);
     end
         test_preds=wm_mult_predict_batch_test(ensemble{r},test_dsk); %calculate prediction
         pred_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds;
@@ -121,16 +121,7 @@ for k = 2:floor(rows/batchsize)
     %create accuracy data for plot
     acc(k) = sum(result)/((k-1)*batchsize);
     
-    %
-    %save the experts, weights and size of dataset
-    %     ens_hist{k}={};
-    %     for j=1:size(ensemble,1)
-    %         aa={ensemble{j,1} ensemble{j,2} length(ensemble{j,3})};
-    %         ens_hist{k}=[ens_hist{k};aa];
-    %     end
-    
-    %save number of experts
-    %    exp_count(k)=size(ensemble,1);
+
     
     
     
