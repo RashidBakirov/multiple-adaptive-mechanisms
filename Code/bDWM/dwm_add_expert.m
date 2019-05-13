@@ -5,8 +5,6 @@ function[new_ensemble] = dwm_add_expert(ensemble,dsk,classifier)
 % weight 1
 
 new_ensemble=ensemble;
-[~, ens_size] =size(new_ensemble);
-ens_size=ens_size+1;
 exp=dsk*classifier ;
 new_ensemble{end+1}.model=exp; % add one to cell array (instead of normal array) to store the objects
 new_ensemble{end}.weight=1; % and weights

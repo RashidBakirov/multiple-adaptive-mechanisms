@@ -15,17 +15,16 @@ u=[new_ensemble{:}];
 maxW= max([u.weight]); %max weight
 scale=1/maxW;
 
-to_delete = [];
+to_delete = 1:ens_size;
+num_exp=0;
 
 for j=1:ens_size
     weight_new=new_ensemble{j}.weight*scale;
-    if (weight_new<0.01)
-        to_delete(end+1) = j;
-        %exp_hist=[exp_hist; [size(new_ensemble{j}.data,1),0]];
-    else
+    if (weight_new>=0.01)
+        to_delete(j-num_exp) = [];
         new_ensemble{j}.weight=weight_new; %normalizing the weights
-    end
-    
+        num_exp=num_exp+1;
+    end  
 end
 
-new_ensemble(:,[to_delete])=[]; %kill em all
+new_ensemble(:,to_delete)=[]; %kill em all

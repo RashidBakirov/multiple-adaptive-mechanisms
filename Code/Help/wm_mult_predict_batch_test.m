@@ -8,7 +8,6 @@ function [ fin_preds ] = wm_mult_predict_batch_test( ensemble, data )
     
     %this will be matrix of n predictions by m experts
     predmatrix = zeros(size(data,1),ens_size);
-    labels=[]; %this will be possible labels
        
     %for each expert get the predictions vector
     for j=1:ens_size
@@ -16,11 +15,10 @@ function [ fin_preds ] = wm_mult_predict_batch_test( ensemble, data )
         exp=ensemble{j}.model;   
         tst=dsk*exp; %perform classification 
         pred=labeld_rb(tst);
-        predmatrix(:,j)=pred; %get predicted label   
-        labels=[labels;predmatrix(:,j)];       
+        predmatrix(:,j)=pred; %get predicted label       
     end
     
-    labels = unique(labels);
+    labels = unique(predmatrix);
     
     u=[ensemble{:}];
     weights=[u.weight]; %create weights vector  
@@ -31,9 +29,9 @@ function [ fin_preds ] = wm_mult_predict_batch_test( ensemble, data )
     %Compare the votes (streched to make surface) against a uniforma surface of each option
     B = bsxfun(@eq, permute(predmatrix, [3 2 1]) ,labels_cube);
     %Find a weighted sum
-    W = squeeze(sum(bsxfun(@times, repmat(weights, size(labels,1), 1), B), 2))';
+    W = squeeze(sum(bsxfun(@times, repmat(weights, size(labels,1), 1), B), 2));
     %Find the options with the highest weighted sum
-    [xx, i] = max(W, [], 2);
+    [~, i] = max(W, [], 1);
     fin_preds=labels(i); 
 
     

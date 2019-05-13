@@ -6,17 +6,16 @@ tic
 
 
 disp('START');
-numlabels = length(unique(labels));
+[rows, ~]=size(data);
 
-[rows cols]=size(data);
-
-ds1=dataset(data(1:batchsize,:),labels(1:batchsize)) %create the first datapoint
-dsk=[];
+ds1=dataset(data(1:batchsize,:),labels(1:batchsize)); %create the first datapoint
 cl=ds1*classifier;
 
 w_init=1/8;
 
 am_weights=repmat(w_init, 1, 8);
+
+ensemble = cell(8,1);
 
 for i=1:8
     % initialize the first learner with weight 1, given classifier
@@ -36,17 +35,15 @@ subwindow_size=size(test_data,1)/size(data,1);
 
 result_test = zeros(1,size(test_data,1)-subwindow_size*batchsize);
 pred_test = zeros(1,size(test_data,1)-subwindow_size*batchsize);
-avg_acc=[];
 avg_acc_test=[];
-avg_result_test=zeros(1,rows-1);
 
-%result(1)=1;
-
-exp_count=1;
 acc(1)=1;
-exp_hist=[];
 
 r=1;
+
+batch_preds=zeros(batchsize,8);
+test_preds=zeros(batchsize*size(test_data,1)/size(data,1),8);
+loss=zeros(1,8);
 
 %for all the data rows do incrementally the following:
 for k = 2:floor(rows/batchsize)
@@ -82,12 +79,11 @@ for k = 2:floor(rows/batchsize)
     if ~isempty(test_data)
         test_dsk=dataset(test_data(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize,:));
         for i=1:8
-        [batch_preds(:,i), ~] = wm_mult_predict_batch(ensemble{i},dsk,labelsBatch);
-        batch_preds(:,i) = wm_class_prob_batch( batch_preds, am_weights);
-    end
-        test_preds=wm_mult_predict_batch_test(ensemble{r},test_dsk); %calculate prediction
-        pred_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds;
-        result_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds==test_labels(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize);
+            test_preds(:,i) = wm_mult_predict_batch_test(ensemble{i},test_dsk);
+        end
+        test_preds_final=wm_class_prob_batch(test_preds,am_weights); %calculate prediction
+        pred_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds_final;
+        result_test(1+(k-2)*subwindow_size*batchsize:(k-1)*subwindow_size*batchsize)=test_preds_final==test_labels(1+(k-1)*subwindow_size*batchsize:(k)*subwindow_size*batchsize);
     end
     %---------------------------------------------------------------
     
@@ -96,14 +92,7 @@ for k = 2:floor(rows/batchsize)
     [selected_ensemble, r] = dwm_candidate_select_batch(ensemble);
     disp([num2str(k) ': AM optimal = ' num2str(r)])
     ams(k-1,1)=r_actual; ams(k-1,2)=r;
-    
-    
-    
-    
-    %distr=tabulate(labels(1:k*batchsize)); %get the distribution of labels up to this point to estimate the threshold for DWM
-    distr=tabulate(labels(1+(k-2)*batchsize:(k-1)*batchsize)); %get the distribution of labels from the last batch to estimate the threshold for DWM
-    threshold=max(distr(:,end))/100; %the proportion of majority label
-    
+      
     resultsBatch=preds(1+(k-2)*batchsize:(k-1)*batchsize)==labelsBatch';
     result(1+(k-2)*batchsize:(k-1)*batchsize)=resultsBatch;
     
@@ -131,10 +120,6 @@ end
 avg_acc=mean(result());
 
 if ~isempty(test_data)
-    for i=1:floor(rows/batchsize)-1
-        avg_result_test(i)=mean(result_test((i-1)*subwindow_size*batchsize+1:i*subwindow_size*batchsize));
-    end
-    
     avg_acc_test=mean(result_test);
 end
 

@@ -6,6 +6,6 @@ for i=1:8
 end
 
 %preds_comparison
-[maxval,max_ind] =max(preds_comparison);
+[~,max_ind] =max(preds_comparison);
 selected_ensemble=ensemble{max_ind};
 
