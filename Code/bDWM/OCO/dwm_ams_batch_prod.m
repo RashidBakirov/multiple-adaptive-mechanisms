@@ -68,14 +68,7 @@ for k = 2:floor(rows/batchsize)
     %assigning predictions to the probabilistic weighted vote of predictions from all
     %am's.
     preds(1+(k-2)*batchsize:(k-1)*batchsize) = wm_class_prob_batch( batch_preds, am_weights);
-    
     am_weights=am_weights.*(1+learn_rate*(total_loss-loss));
-    
-    %update weights according to online gradient descent.
-    am_weights=am_weights-learn_rate*loss;
-    am_weights=simplex_proj(am_weights);
-    %normalise weights
-    am_weights=am_weights/sum(am_weights);
         
     %---------------------------------------------------------------
     %BEGIN TESTING ON A SEPARATE TESTSET, without learning on itif a

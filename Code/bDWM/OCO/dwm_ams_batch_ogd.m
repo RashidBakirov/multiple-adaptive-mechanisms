@@ -69,8 +69,7 @@ for k = 2:floor(rows/batchsize)
     %update weights according to online gradient descent.
     am_weights=am_weights-learn_rate*loss;
     am_weights=simplex_proj(am_weights);
-    %normalise weights
-    am_weights=am_weights/sum(am_weights);
+
         
     %---------------------------------------------------------------
     %BEGIN TESTING ON A SEPARATE TESTSET, without learning on itif a

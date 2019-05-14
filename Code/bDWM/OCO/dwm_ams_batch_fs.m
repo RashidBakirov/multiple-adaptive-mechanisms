@@ -72,12 +72,6 @@ for k = 2:floor(rows/batchsize)
     am_weights=am_weights.*exp((-learn_rate)*loss)/s;
     am_weights=alpha/8+(1-alpha)*am_weights;
 
-     
-    %update weights according to fixed share (Cesa Bianchi 2012 version).
-    am_weights=am_weights-learn_rate*loss;
-    am_weights=simplex_proj(am_weights);
-    %normalise weights
-    am_weights=am_weights/sum(am_weights);
         
     %---------------------------------------------------------------
     %BEGIN TESTING ON A SEPARATE TESTSET, without learning on itif a
