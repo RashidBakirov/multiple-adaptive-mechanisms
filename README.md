@@ -27,7 +27,7 @@ This is a collection of existing ML algorithms with multiple adaptive mechanisms
 
 ## Authors
 
-[Rashid Bakirov] (https://www.rashidbakirov.com/)
+[Rashid Bakirov](https://www.rashidbakirov.com/)
 
 ## Version History
 
@@ -45,4 +45,10 @@ This is a collection of existing ML algorithms with multiple adaptive mechanisms
 ## License
 
 License details pending.
+
+## References
+[1] Kolter, J. Z., & Maloof, M. A. (2007). Dynamic weighted majority: An ensemble method for drifting concepts. The Journal of Machine Learning Research, Volume 8, 2755–2790.
+[2] Bach, S. H., & Maloof, M. A. (2008). Paired Learners for Concept Drift. 2008 Eighth IEEE International Conference on Data Mining, 23–32.
+[3] Bifet, A., Holmes, G., & Pfahringer, B. (2010). Leveraging bagging for evolving data streams. Lecture Notes in Computer Science (Including Subseries Lecture Notes in Artificial Intelligence and Lecture Notes in Bioinformatics), 6321 LNAI(PART 1), 135–150.
+[4] van Rijn, J. N., Holmes, G., Pfahringer, B., & Vanschoren, J. (2015). Having a Blast: Meta-Learning and Heterogeneous Ensembles for Data Streams. Data Mining (ICDM), 2015 IEEE International Conference On, 1003–1008.
 
