@@ -7,7 +7,11 @@ import pandas as pd
 from leverage_bagging_batch import LeverageBagging
 from skmultiflow.trees import HoeffdingTree
 from skmultiflow.bayes import NaiveBayes
-from skmultiflow.lazy.knn import KNN
+import time
+#from skmultiflow.lazy.knn import KNN
+#from scikit-multiflow.trees import HoeffdingTree
+#from scikit-multiflow.bayes import NaiveBayes
+#from scikit-multiflow.lazy.knn import KNN
 
 
 # Setting up the LeverageBagging classifier to work with KNN classifiers
@@ -16,7 +20,7 @@ from skmultiflow.lazy.knn import KNN
 # LB_MODE=2 ==> #adding a new model
 # LB_MODE=3 ==> #updating models AND adding a new model
 
-def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r):
+def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r, nFolds):
 
     ######################
     # dataTrn='26_trn.csv'
@@ -28,13 +32,19 @@ def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r):
     # print(dataTst)
     # print(baseEstimator)
     # print(batchSize)
+    
+    #yyy=csv_trn +' '+ csv_tst+' '+  base_estimator+' '+  batchsize+' '+  strategy+' '+  r+' '+  nFolds
+    #print(csv_trn +' '+ csv_tst+' '+  base_estimator+' '+  batchsize+' '+  strategy+' '+  r+' '+  nFolds)
 
-    NUMFOLDS = 10
+    
 
     batchsize = int(batchsize)
     baseEstimator = int(base_estimator)
     strategy=int(strategy)
     r=int(r)
+    nFolds=int(nFolds)
+    
+    NUMFOLDS = nFolds
 
     if r==0:
         flag_rc=False
@@ -42,7 +52,7 @@ def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r):
         flag_rc=True
 
     batch_no = 1
-    d_trn = pd.read_csv('~/data/'+csv_trn, header=None)
+    d_trn = pd.read_csv(csv_trn, header=None)
     x_trn = d_trn.iloc[:, :-1].values
     y_trn = d_trn.iloc[:, -1].values
 
@@ -57,7 +67,7 @@ def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r):
     ams = np.zeros((number_of_batches, 2))
     acc_tst = None
     try:
-        d_tst = pd.read_csv('~/data/'+csv_tst, header=None)
+        d_tst = pd.read_csv(csv_tst, header=None)
         x_tst = d_tst.iloc[:, :-1].values
         y_tst = d_tst.iloc[:, -1].values
         batch_size_tst = int(np.floor(d_tst.shape[0] / d_trn.shape[0]) * batchsize)
@@ -74,9 +84,9 @@ def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r):
     elif (baseEstimator == 1):
         model0 = LeverageBagging(base_estimator=HoeffdingTree(), LB_MODE=1)
         #model0 = LeverageBagging(base_estimator=HoeffdingTree())
-    elif (baseEstimator == 2):
+    #elif (baseEstimator == 2):
         #model0 = LeverageBagging(base_estimator=KNN(), n_estimators=100)
-        model0 = LeverageBagging(base_estimator=KNN(), n_estimators=100, LB_MODE=1)
+        #model0 = LeverageBagging(base_estimator=KNN(), n_estimators=100, LB_MODE=1)
 
     if flag_rc:
 
@@ -196,6 +206,7 @@ def lev_bag(csv_trn, csv_tst, base_estimator, batchsize, strategy, r):
     if acc_tst is None:
         #print(acc_trn)
         return acc_trn
+        #return yyy
     else:
         #print(acc_tst)
         return acc_tst
@@ -224,10 +235,14 @@ def xval_select(ensemble, data, labels, batchsize, NUMFOLDS):
 
 if __name__ == '__main__':
     #if (len(sys.argv) == 5):
-    print(lev_bag(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6]))
-    # acc_trn, acc_tst = lev_bag('30_trn.csv', None, 0, 50, 0, True)
-    # print(acc_trn)
-    # print(acc_tst)
+    print(lev_bag(sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4], sys.argv[5], sys.argv[6], sys.argv[7]))
+    #start = time.time()
+    #res = lev_bag('28_trn.csv', None, 0, 50, 3, False,10)
+    #end = time.time()
+    #print(end-start)
+    #print(res)
+    #print(acc_trn)
+    #print(acc_tst)
 # for k in range(2):
 #     for j in range(2):
 #         for i in range(6):

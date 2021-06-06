@@ -17,9 +17,10 @@ j_idx=0;
 %addAttachedFiles(poolobj,{'BlastExperimentXV.class', '.\lib\moa.jar'})
 
 
-for j=[10,20,50]
+%for j=[10,20,50]
+for j=[50]
     j_idx=j_idx+1;
-    for i=1:31
+    for i=1
     %for i=1:31
         %folder = getAttachedFilesFolder;
         %javaaddpath(folder);

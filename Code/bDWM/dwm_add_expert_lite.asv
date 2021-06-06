@@ -1,0 +1,26 @@
+function[new_ensemble] = dwm_add_expert_lite(ensemble,dsk,classifier)
+
+
+% AM3 add a new classifier if final prediction is wrong, with initial
+% weight 1
+% lite version where the worse performing expert is replaced by the new one
+
+new_ensemble=ensemble;
+exp=dsk*classifier;
+min_weight=999;
+
+for j=1:ens_size
+    weight_new=new_ensemble{j}.weight*scale;
+    if (weight_new>=0.01)
+        to_delete(j-num_exp) = [];
+        new_ensemble{j}.weight=weight_new; %normalizing the weights
+        num_exp=num_exp+1;
+    end  
+end
+
+
+new_ensemble{end+1}.model=exp; % add one to cell array (instead of normal array) to store the objects
+new_ensemble{end}.weight=1; % and weights
+new_ensemble{end}.data=dsk; % and data
+new_ensemble{end}.correct=1; % correct prediction flag on by default
+

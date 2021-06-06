@@ -1,7 +1,7 @@
-function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch_weka(data, labels, classifier, options, mode, flag_rc,  batchsize, test_data, test_labels)
+function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch_weka(data, labels, classifier, options, strategy, flag_rc,  batchsize, test_data, test_labels, dataset_id)
 tic
 % dynamic weighted majority with multiple ams
-% mode to select AM
+% strategy to select AM
 % 1:8 - respective AM only
 % 9 - original dwm
 % 10 - xval
@@ -11,6 +11,20 @@ NUMFOLDS = 10 %xval folds
 numlabels = length(unique(labels));
  
 [rows cols]=size(data);
+
+classifier_id=classifier; 
+% classifier short id for logging
+if strcmp(classifier,'bayes.NaiveBayes')
+    classifier_id='NB';
+elseif strcmp(classifier,'trees.HoeffdingTree')
+    classifier_id='HT';
+end
+
+% dataset id id for logging
+if isempty(dataset_id)
+    dataset_id=0;
+end
+
 
 %first convert everything to weka instances
 w_data_train = matlab2weka('w_data_train', [], [data labels]);
@@ -59,18 +73,16 @@ exp_count=1;
 acc(1)=1;
 exp_hist=[];
 
-if mode==11 && ~flag_rc
+if strategy==11 && ~flag_rc
     return;
 end
 
 %for all the data rows do incrementally the following:
-for k = 2:floor(rows/batchsize)
-    %k
-    if k==5
-       99
-    end
+numBatches = floor(rows/batchsize);
 
-    
+for k = 2:numBatches
+
+    progress = 100*((k-1)/(numBatches-1)); %calculate progress for the whole dataset for logging
     % 1) calculate prediction of ensemble
     % disp('step 1'); 
     dsk=weka.core.Instances(w_data_train,(k-1)*batchsize,batchsize); %make a new dataset consisiting of current data point
@@ -78,10 +90,10 @@ for k = 2:floor(rows/batchsize)
     %select an ensemble member to predict, if flag_return is set
     if flag_rc
     
-        if mode<=8 %always same AM
-            r=mode;
-            disp([num2str(k) ': AM deployed = ' num2str(r)]);
-        elseif mode==9 %original dwm
+        if strategy<=8 %always same AM
+            r=strategy;
+
+        elseif strategy==9 %original dwm
             if k>2
                 if mean(resultsBatch)<threshold    
                     r=5;
@@ -91,13 +103,14 @@ for k = 2:floor(rows/batchsize)
             else
                 r=4;
             end
-            disp([num2str(k) ': AM deployed = ' num2str(r)]);
-        elseif mode==10 %optimal
-            r=xval_selection;
-            disp([num2str(k) ': AM deployed = ' num2str(r)]);         
-        elseif mode==11
+        elseif strategy==10 %optimal
+            r=xval_selection;     
+        elseif strategy==11
             r=1; %this doesn't matter here
         end
+        
+        disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', strategy: ' num2str(strategy) ', Batch: ' num2str(k) ', AM: ' num2str(r)]);
+
  
         %parfor i=1:8
         % predicting with all possible ensembles
@@ -122,8 +135,10 @@ for k = 2:floor(rows/batchsize)
         r_actual=r;
         [selected_ensemble, r] = dwm_candidate_select_batch(ensemble);
         %selected_ensemble = ensemble{r};
-        disp([num2str(k) ': AM optimal = ' num2str(r)])
-        if mode==11 %optimal am
+        %disp([num2str(k) ': AM optimal = ' num2str(r)])
+        disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', strategy: ' num2str(strategy) ', Batch: ' num2str(k) ', RC: 1' num2str(r)]);
+
+        if strategy==11 %optimal am
            preds(1+(k-2)*batchsize:(k-1)*batchsize)=selected_ensemble{1}.ensemble_prediction;
         end
         ams(k-1,1)=r_actual; ams(k-1,2)=r;
@@ -150,8 +165,8 @@ for k = 2:floor(rows/batchsize)
     end
     
     %distr=tabulate(labels(1:k*batchsize)); %get the distribution of labels up to this point to estimate the threshold for DWM
-    distr=tabulate(labels(1+(k-2)*batchsize:(k-1)*batchsize)); %get the distribution of labels from the last batch to estimate the threshold for DWM
-    threshold=max(distr(:,end))/100; %the proportion of majority label
+    [~,majlabel_size]=mode(labels(1+(k-2)*batchsize:(k-1)*batchsize)); %get the distribution of labels from the last batch to estimate the threshold for DWM
+    threshold=majlabel_size/batchsize; %the proportion of majority label
     resultsBatch=preds(1+(k-2)*batchsize:(k-1)*batchsize)==labelsBatch';
     result(1+(k-2)*batchsize:(k-1)*batchsize)=resultsBatch;
 
@@ -160,38 +175,40 @@ for k = 2:floor(rows/batchsize)
     
     %adaptation-----------------------------------------------------  
     %xval selection
-    if mode == 10
+    if strategy == 10
         if flag_rc
-            [xval_selection] = dwm_xval_select_batch_weka(ensemble{r}, dsk, classifier, options, batchsize, NUMFOLDS);
+            [xval_selection] = dwm_xval_select_batch_weka(ensemble{r}, dsk, classifier, options, batchsize, NUMFOLDS, labelsBatch);
         else
-            [xval_selection] = dwm_xval_select_batch_weka(selected_ensemble, dsk, classifier, options, batchsize, NUMFOLDS);
+            [xval_selection] = dwm_xval_select_batch_weka(selected_ensemble, dsk, classifier, options, batchsize, NUMFOLDS, labelsBatch);
         end
     end
     % create all variations of dwm adaptation if flag return is set
     %parfor i=0:7
     if flag_rc
+        %parfor i=1:8
         for i=1:8
             ensemble{i}=dwm_adapt_batch_weka(selected_ensemble,dsk,classifier,options,i);
         end
         
-    elseif mode~=11 %if not set selected_ensemble automatically
-        if mode<=8 %always same AM
-            r=mode;
-            disp([num2str(k) ': AM deployed = ' num2str(mode)]);
-        elseif mode==9 %original dwm
+    elseif strategy~=11 %if not set selected_ensemble automatically
+        if strategy<=8 %always same AM
+            r=strategy;
+        elseif strategy==9 %original dwm
                 if mean(resultsBatch)<threshold    
                     r=5;
                 else
                     r=1;
                 end
-            disp([num2str(k) ': AM deployed = ' num2str(r)]);
-        elseif mode == 10 %xval
+                
+        elseif strategy == 10 %xval
             [r] = xval_selection;
-            disp([num2str(k) ': AM deployed = ' num2str(r)]);
+
         end
          ams(k-1,1)=r;ams(k-1,2)=r;
         selected_ensemble=dwm_adapt_batch_weka(selected_ensemble,dsk,classifier,options,r);       
     end
+    disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', strategy: ' num2str(strategy) ', Batch: ' num2str(k) ', AM: ' num2str(r)]);
+
 
 %     
     %save the experts, weights and size of dataset

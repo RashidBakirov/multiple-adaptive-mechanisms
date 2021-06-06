@@ -30,6 +30,9 @@ function [ fin_preds, new_ensemble ] = wm_mult_predict_batch( ensemble, data, tr
     end
     
     labels = unique(predmatrix);
+    if size(labels,1)==1
+        labels = labels';
+    end
     
     u=[new_ensemble{:}];
     weights=[u.weight]; %create weights vector  

@@ -4,10 +4,9 @@ function[new_ensemble] = dwm_retrain_weka(ensemble,dsk)
     [~, ens_size] =size(new_ensemble);
 
     for j=1:ens_size
-            classifier = new_ensemble{j}.model;
-            %dsn=[new_ensemble{j}.data; dsk]; %add new datapoint to the old dataset          
+            classifier = copy(new_ensemble{j}.model);
            
-            for i=1:dsk.numInstances
+            for i=1:size(dsk)
                 inst = dsk.instance(i-1);
                 try
                     classifier.updateClassifier(inst);

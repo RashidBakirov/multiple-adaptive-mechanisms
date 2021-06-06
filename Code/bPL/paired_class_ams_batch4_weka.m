@@ -1,6 +1,18 @@
-function[result, preds, result_test, pred_test, avg_result_test, change_hist, change, avg_acc, avg_acc_test] = paired_class_ams_batch4_weka(data, labels, threshold, classifier, options, mode, flag_rc,  batchsize, test_data, test_labels)
+function[result, preds, result_test, pred_test, avg_result_test, change_hist, change, avg_acc, avg_acc_test] = paired_class_ams_batch4_weka(data, labels, threshold, classifier, options, mode, flag_rc,  batchsize, test_data, test_labels, dataset_id)
 
 % Simulation of simple online classfication without forgetting
+
+if isempty(dataset_id) %dataset_id for logging purposes
+    dataset_id=0;
+end
+
+classifier_id=classifier; 
+% classifier short id for logging
+if strcmp(classifier,'bayes.NaiveBayes')
+    classifier_id='NB';
+elseif strcmp(classifier,'trees.HoeffdingTree')
+    classifier_id='HT';
+end
 
 [rows , ~]=size(data);
 
@@ -30,6 +42,7 @@ acc=zeros(1,rows-batchsize);
 preds=zeros(1,rows-batchsize);
 %avg_result=zeros(1,rows-batchsize);
 
+avg_acc=[];
 avg_acc_test=[];
 
 subwindow_size=size(test_data,1)/size(data,1)*batchsize;
@@ -48,9 +61,16 @@ xval_select=1;
 avg_result=[];
 flag_counter=1;
 
+if mode>4 && ~flag_rc
+    return
+end
+
+numBatches = floor(rows/batchsize);
 
 %for all the data rows do incrementally the following:
-for k = 2:floor(rows/batchsize)
+for k = 2:numBatches
+    
+    progress = 100*(((k-1)+mode*(numBatches-1)+flag_rc*5*(numBatches-1))/(11*(numBatches-1))); %calculate progress for the whole dataset for logging
       
     dsk=weka.core.Instances(w_data_train,(k-1)*batchsize,batchsize); %make a new dataset consisiting of current data point
     labelsBatch=labels(1+(k-1)*batchsize:k*batchsize);
@@ -68,21 +88,23 @@ for k = 2:floor(rows/batchsize)
     if mode==0 || (mode==4 && xval_select==0)
         preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_pred_0;
         exp = copy(exp_old);
-        disp([num2str(k) ': AM deployed=0']);
+        disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', AM: 0']);
         
     
     %stable learner
     elseif mode==1 || (mode==4 && xval_select==1)
         preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_pred;
-        disp([num2str(k) ': AM deployed=1']);
         exp=copy(exp_stable);
+        disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', AM: 1']);
+
         
     %reactive learner
     elseif mode==2 || (mode==4 && xval_select==2)
         preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_pred_react;
         exp_stable=copy(exp_react);
-        disp([num2str(k) ': AM deployed=2']);
         exp=copy(exp_react);
+        disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', AM: 2']);
+
         
         %paired learner
     elseif mode==3
@@ -93,10 +115,14 @@ for k = 2:floor(rows/batchsize)
             change_hist=[change_hist k];
             exp_stable=copy(exp_react);
             exp=copy(exp_react);
-            disp('boom');
+            disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', AM: 2']);
+
+            %disp('boom');
         else
             preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_pred;
             exp=copy(exp_stable);
+            disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', AM: 1']);
+
         end        
     end
     
@@ -114,25 +140,31 @@ for k = 2:floor(rows/batchsize)
     if flag_rc || mode > 4
         [~,max_ind] =max([fin_acc fin_acc_react fin_acc_0]);
         if max_ind==1 && ~(mode==3)
-            disp('RC1');
+            %disp('RC1');
             exp=copy(exp_stable);
             if mode > 4   %oracle learner
                 preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_pred;
             end
+            disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', RC: 1']);
+
         elseif max_ind==2 && ~(mode==3)
-            disp('RC2');
+            %disp('RC2');
             exp=copy(exp_react);
             if mode > 4 %oracle learner
                 preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_pred_react;
             end
+            disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', RC: 2']);
+
         elseif max_ind==3
-            disp('RC0');
+            %disp('RC0');
             exp=copy(exp_old);
             dsk_old=dsk_old2;
             flag_counter=0;
             if mode > 4 %oracle learner
                 preds(1+(k-2)*batchsize:(k-1)*batchsize)=fin_acc_0;
             end
+            disp(['Batchsize: ' num2str(batchsize) ', ' classifier_id ', Dataset: ' num2str(dataset_id) ', ' num2str(progress) '%, RC: ' num2str(flag_rc) ', Mode: ' num2str(mode) ', Batch: ' num2str(k) ', RC: 0']);
+
         end
     end
     

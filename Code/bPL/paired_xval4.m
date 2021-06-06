@@ -1,10 +1,12 @@
-function[max_ind] = paired_xval4(exp0, ds,ds_react,dataBatch,labelsBatch, classifier, batchSize, numFolds)
+function[max_ind] = paired_xval4(ds,ds_react,dataBatch,labelsBatch, classifier, batchSize, numFolds)
 
     testSize=round(batchSize/numFolds);
     
     sumAccuracy=zeros(1,2);
 
     for i=1:numFolds
+        
+        
 
         labelsBatchTest=labelsBatch(1+(i-1)*testSize:i*testSize);
         dataBatchTest=dataBatch(1+(i-1)*testSize:i*testSize,:);
@@ -19,7 +21,7 @@ function[max_ind] = paired_xval4(exp0, ds,ds_react,dataBatch,labelsBatch, classi
         ds_react_i = [ds_react; dsk_train];
         
         exp=ds_i*classifier; %retrain stable expert
-        exp_react=ds_react_i*classifier; %retrain stable expert
+        exp_react=ds_react_i*classifier; %retrain reactive expert
         
         tst=dsk_test*exp; %perform classification
         tst_react=dsk_test*exp_react; %perform classification on reactive expert

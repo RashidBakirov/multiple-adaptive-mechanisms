@@ -1,8 +1,8 @@
 function[new_ensemble] = dwm_adapt_batch(ensemble,dsk,classifier,i)
 
-if i==4
-    new_ensemble=ensemble;
-elseif i==2
+new_ensemble=ensemble; %if i==4
+
+if i==2
     new_ensemble=dwm_retrain(ensemble,dsk,classifier);
 elseif i==3
     new_ensemble=dwm_change_weights_batch(ensemble); 

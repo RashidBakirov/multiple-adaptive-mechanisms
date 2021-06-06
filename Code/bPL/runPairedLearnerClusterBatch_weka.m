@@ -5,7 +5,7 @@ function runPairedLearnerClusterBatch_weka(datasetIdentifier, batchsize, thresho
 %   Detailed explanation goes here
 
 warning ('off','all');
-load classificationdata;
+load '~/rashid/mam/data/classificationdata';
 
 % feature('numCores');
 % c = parcluster
@@ -22,13 +22,18 @@ labels_test=alldata{datasetIdentifier}{4};
 
 options='';
 
+diary (['~/rashid/mam/results/bpl/' num2str(datasetIdentifier) '_PairedLearnerResultsBatch_weka_' classifier '_' num2str(batchsize) '_' num2str(threshold) '.log']);
+
 for j=0:1
     %parfor i=0:10
     for i=0:5
-        [result{i}{j+1}, preds{i}{j+1},~, pred_test{i}{j+1}, avg_result{i}{j+1}, ~, ~, avg_acc{i}{j+1}, avg_acc_test{i}{j+1}] = paired_class_ams_batch4_weka(data_train, labels_train, threshold, classifier,options, i, j, batchsize, data_test,labels_test);
+        [result{i+1}{j+1}, preds{i+1}{j+1},~, pred_test{i+1}{j+1}, avg_result{i+1}{j+1}, ~, ~, avg_acc{i+1}{j+1}, avg_acc_test{i+1}{j+1}] = paired_class_ams_batch4_weka(data_train, labels_train, threshold, classifier,options, i, j, batchsize, data_test,labels_test,datasetIdentifier);
+        save (['~/rashid/mam/results/bpl/' num2str(datasetIdentifier) '_PairedLearnerResultsBatch_weka_' classifier '_' num2str(batchsize) '_' num2str(threshold) '.mat']);
     end
 end
 
-save ([num2str(datasetIdentifier) '_PairedLearnerResultsBatch_weka_' classifier '_' num2str(batchsize) '_' num2str(threshold) '.mat']);
+%save ([num2str(datasetIdentifier) '_PairedLearnerResultsBatch_weka_' classifier '_' num2str(batchsize) '_' num2str(threshold) '.mat']);
+
+diary off;
 
 exit;

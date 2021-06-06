@@ -20,7 +20,8 @@ function [predictedClass, classProbs] = wekaClassify(testData,classifier)
 % Written by Matthew Dunham
 
     if(~wekaPathCheck),classProbs = []; return,end
-    for t=0:testData.numInstances-1  
+    %for t=0:testData.numInstances-1
+    for t=0:size(testData)-1
        classProbs(t+1,:) = (classifier.distributionForInstance(testData.instance(t)))';
     end
     [~,predictedClass] = max(classProbs,[],2);

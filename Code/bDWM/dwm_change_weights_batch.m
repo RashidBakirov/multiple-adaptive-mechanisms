@@ -8,6 +8,7 @@ new_ensemble=ensemble;
 
 for j=1:ens_size
     new_ensemble{j}.weight=new_ensemble{j}.weight*exp(-(1-new_ensemble{j}.correct)); %weight update according to herbster 1998
+    %new_ensemble{j}.weight=new_ensemble{j}.weight*(1-(1-new_ensemble{j}.correct)*0.5);  %dwm style update
 end
 
 %maxW= max(cellfun(@max,new_ensemble{:}.weight)); %max weight

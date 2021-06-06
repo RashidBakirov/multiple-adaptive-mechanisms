@@ -33,9 +33,9 @@ end
 result = zeros(1,rows-1);
 %exp_count=zeros(1,rows);
 %ens_hist{1}={ensemble{1}{1}.model ensemble{1}{1}.weight length(ensemble{1}{1}.data)};
-acc=zeros(1,rows-1);
+acc=zeros(rows-1,1);
 preds=zeros(1,rows-1);
-ams=zeros(rows-1,2);
+ams=zeros(rows-1,1);
 
 subwindow_size=size(test_data,1)/size(data,1);
 
@@ -49,7 +49,6 @@ xval_selection=4;
 %result(1)=1;
 
 exp_count=1;
-acc(1)=1;
 exp_hist=[];
 
 if mode==11 && ~flag_rc
@@ -174,7 +173,7 @@ for k = 2:rows
             [r] = xval_selection;
             disp([num2str(k) ': AM deployed = ' num2str(r)]);
         end
-         ams(k-1,1)=r;ams(k-1,2)=r;
+         %ams(k-1,1)=r;ams(k-1,2)=r;
         selected_ensemble=dwm_adapt_batch(selected_ensemble,dsk,classifier,r);       
     end
     
@@ -183,7 +182,8 @@ for k = 2:rows
     
     
     %create accuracy data for plot
-     acc(k) = sum(result)/((k-1));
+     acc(k-1) = sum(result)/((k-1));
+     ams(k-1) = r;
 
 %     
     %save the experts, weights and size of dataset

@@ -1,5 +1,5 @@
 
-function runClassificationCluster_batch_weka(datasetIdentifier, batchSize)
+function runBatchDynamicWeightedMajority_ht(datasetIdentifier, batchSize)
 
 %RUNEXPERIMENTFORJOURNAL run experiment for journal paper
 %   Detailed explanation goes here

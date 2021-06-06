@@ -1,4 +1,4 @@
-function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams] = dwm_ams_batch(data, labels, classifier, mode, flag_rc,  batchsize, test_data, test_labels)
+function[acc, avg_acc , result, preds, avg_acc_test, pred_test, ams, time] = dwm_ams_batch(data, labels, classifier, mode, flag_rc,  batchsize, test_data, test_labels, folds)
 tic
 % dynamic weighted majority with multiple ams
 % mode to select AM
@@ -11,10 +11,12 @@ disp('START');
 disp(['MODE = ' num2str(mode)]);
 disp(['RC = ' num2str(flag_rc)]);
 
-NUMFOLDS = 10 %xval folds
+NUMFOLDS = folds %xval folds
 numlabels = length(unique(labels));
  
 [rows cols]=size(data);
+
+time=zeros(1,floor(rows/batchsize)-1);
 
 ds1=dataset(data(1:batchsize,:),labels(1:batchsize)) %create the first datapoint
 dsk=[];
@@ -57,10 +59,13 @@ if mode==11 && ~flag_rc
     return;
 end
 
+numBatches=floor(rows/batchsize);
+
 %for all the data rows do incrementally the following:
-for k = 2:floor(rows/batchsize)
+for k = 2:numBatches
     % 1) calculate prediction of ensemble
     % disp('step 1');
+    
     
     dataBatch=data(1+(k-1)*batchsize:k*batchsize,:);
     labelsBatch=labels(1+(k-1)*batchsize:k*batchsize);
@@ -162,6 +167,7 @@ for k = 2:floor(rows/batchsize)
     % create all variations of dwm adaptation if flag return is set
     %parfor i=0:7
     if flag_rc
+        %parfor i=1:8
         for i=1:8
             ensemble{i}=dwm_adapt_batch(selected_ensemble,dsk,classifier,i);
         end
@@ -204,7 +210,7 @@ for k = 2:floor(rows/batchsize)
 %    exp_count(k)=size(ensemble,1);
 
 
-    
+time(k-1)=toc;    
     
 end
 
@@ -224,5 +230,5 @@ end
 % for j=1:size(ensemble,1)        
 % exp_hist=[exp_hist; [size(ensemble{j,3},1),1]];
 % end
-toc
+%time(3)=toc
 end
