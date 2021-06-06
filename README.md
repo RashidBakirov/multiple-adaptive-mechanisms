@@ -12,25 +12,27 @@ This is a collection of existing ML algorithms with multiple adaptive mechanisms
 
 ### Dependencies
 
-* Matlab (R2020a was used in experiments).
+* Matlab (R2021a was used in experiments), with Parallel Toolbox for runtime analysis experiments.
 * bLB requires Python 3.5+ and [scikit-multiflow](https://scikit-multiflow.github.io/) package including its dependencies.
 * bBLAST requires Java (1.8 was used in experiments) and [MOA](https://moa.cms.waikato.ac.nz) library.
 * Several other dependencies are included within the code and mentioned in the paper.
 
 ### Setup
 
-* For bBLAST, you need to compile MOA with additional classes included in /code/bBLAST,
+* For bBLAST, MOA needs to be compiled with additional classes included in /code/bBLAST,
 
 ### Running experiments for "Automated Adaptation Strategies for Stream Learning"
 
-* run run.sh with either "q" option for qsub based paralellisation or "b" option for mostly sequential execution (bLB makes use of Matlab parfor).
+* To run _most_ of the experiments, run run.sh with either "q" option for qsub based paralellisation or "b" option for mostly sequential execution (bLB makes use of Matlab parfor). The runtime and other experiments are also included in code, but there not (yet) in the single run command. 
 
 ## Authors
 
-[Rashid Bakirov](https://www.rashidbakirov.com/)
+[Rashid Bakirov](https://www.rashidbakirov.com/). For any help to run the code / questions / comments, contact the author through contacts on the website or other means.
 
 ## Version History
-
+* 0.9 (6/6/21) Code for the accepted version of the paper
+    * Added runtime experiments
+    * Various fixes and optimisation.
 * 0.3
     * Revision of the paper.
     * Added bLB and bBLAST.
